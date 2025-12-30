@@ -459,10 +459,14 @@ app.post("/settle", rateLimit, async (req, res) => {
       skipPreflight: false,
     });
 
-    await connection.confirmTransaction(
-      { signature: payoutSig, ...latest },
-      "confirmed"
-    );
+    try {
+      await connection.confirmTransaction(
+        { signature: payoutSig, ...latest },
+        "confirmed"
+      );
+    } catch (e) {
+      // Don't fail the settle response if confirmation is slow/expired.
+    }
 
     stats.totalWagersLamports += expectedLamports;
     persistStats();

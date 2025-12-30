@@ -210,6 +210,28 @@ app.get("/marketcap", rateLimitMarket, async (req, res) => {
     }
 
     if (marketCapUsd == null) {
+      const priceResp = await fetch(`${JUPITER_PRICE_API}/v6/price?ids=${mint}`);
+      const priceText = await priceResp.text();
+      if (debug) {
+        debugInfo.jup = {
+          status: priceResp.status,
+          body: priceText.slice(0, 600),
+        };
+      }
+      if (priceResp.ok) {
+        const priceData = JSON.parse(priceText);
+        const tokenPrice = priceData?.data?.[mint]?.price;
+        if (typeof tokenPrice === "number") {
+          const supply = await connection.getTokenSupply(new PublicKey(mint), "confirmed");
+          const uiSupply = Number(supply.value.uiAmountString ?? supply.value.uiAmount ?? 0);
+          if (uiSupply > 0) {
+            marketCapUsd = uiSupply * tokenPrice;
+          }
+        }
+      }
+    }
+
+    if (marketCapUsd == null) {
       return res.status(502).json({
         error: "Market data unavailable",
         ...(debug ? { debug: debugInfo } : {}),

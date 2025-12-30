@@ -32,6 +32,8 @@ const FAIR_SEED_BYTES = 32;
 const BURN_INTERVAL_SEC = Number(process.env.BURN_INTERVAL_SEC || 150);
 const PUMPFUN_API = process.env.PUMPFUN_API || "https://frontend-api.pump.fun";
 const DEXSCREENER_API = process.env.DEXSCREENER_API || "https://api.dexscreener.com";
+const JUPITER_PRICE_API = process.env.JUPITER_PRICE_API || "https://price.jup.ag";
+const SOL_MINT = "So11111111111111111111111111111111111111112";
 const WIN_CHANCE = 0.5;
 const HOUSE_EDGE = 0.025;
 const PAYOUT_MULTIPLIER = (1 - HOUSE_EDGE) / WIN_CHANCE;
@@ -150,6 +152,7 @@ app.get("/marketcap", rateLimitMarket, async (req, res) => {
       return res.status(400).json({ error: "Missing mint" });
     }
     let marketCapUsd = null;
+    let marketCapSol = null;
 
     const pumpResp = await fetch(`${PUMPFUN_API}/coins/${mint}`);
     if (pumpResp.ok) {
@@ -157,9 +160,21 @@ app.get("/marketcap", rateLimitMarket, async (req, res) => {
       marketCapUsd =
         data.market_cap_usd ??
         data.marketCapUsd ??
-        data.market_cap ??
-        data.marketCap ??
+        data.usd_market_cap ??
+        data.usdMarketCap ??
         null;
+      marketCapSol = data.market_cap ?? data.marketCap ?? data.market_cap_sol ?? null;
+    }
+
+    if (marketCapUsd == null && marketCapSol != null) {
+      const priceResp = await fetch(`${JUPITER_PRICE_API}/v6/price?ids=${SOL_MINT}`);
+      if (priceResp.ok) {
+        const priceData = await priceResp.json();
+        const solPrice = priceData?.data?.[SOL_MINT]?.price;
+        if (typeof solPrice === "number") {
+          marketCapUsd = Number(marketCapSol) * solPrice;
+        }
+      }
     }
 
     if (marketCapUsd == null) {

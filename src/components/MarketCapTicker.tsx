@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
 const SERVER_URL =
   (import.meta.env?.VITE_SERVER_URL as string | undefined) ?? "http://localhost:8787";

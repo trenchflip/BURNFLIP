@@ -54,6 +54,7 @@ export default function CoinFlip() {
   const { connection } = useConnection();
   const { publicKey, sendTransaction } = useWallet();
   const [payoutSig, setPayoutSig] = useState<string | null>(null);
+  const [payoutStatus, setPayoutStatus] = useState<"pending" | "confirmed" | null>(null);
   const [wagerSig, setWagerSig] = useState<string | null>(null);
   const [clientSeed, setClientSeed] = useState(() =>
     Math.random().toString(36).slice(2, 10)
@@ -146,6 +147,7 @@ export default function CoinFlip() {
     setResultTone("");
     setMessage("Waiting for wallet approval");
     setPayoutSig(null);
+    setPayoutStatus(null);
     setWagerSig(null);
     playTone(980, 240, 0.7);
 
@@ -233,6 +235,7 @@ export default function CoinFlip() {
       setHistory((prev) => [item, ...prev].slice(0, 50));
       if (data.win) {
         setPayoutSig(data.payoutSig);
+        setPayoutStatus("pending");
       }
       setMessage(win ? "You won 🎉" : "You lost 😵");
       setResultTone(win ? "win" : "loss");
@@ -247,6 +250,29 @@ export default function CoinFlip() {
       setFlipping(false);
     }
   };
+
+  useEffect(() => {
+    let active = true;
+    if (!payoutSig) return undefined;
+    const check = async () => {
+      try {
+        const status = await connection.getSignatureStatus(payoutSig, {
+          searchTransactionHistory: true,
+        });
+        if (status?.value?.confirmationStatus === "confirmed" || status?.value?.confirmationStatus === "finalized") {
+          if (active) setPayoutStatus("confirmed");
+        }
+      } catch (e) {
+        // ignore
+      }
+    };
+    check();
+    const id = setInterval(check, 4000);
+    return () => {
+      active = false;
+      clearInterval(id);
+    };
+  }, [connection, payoutSig]);
 
   const quickBet = (v: number) => setBet(String(v));
 
@@ -404,6 +430,11 @@ export default function CoinFlip() {
             {payoutSig && (
               <div style={{ marginTop: 6, color: "#ffd9b3", wordBreak: "break-word" }}>
                 Payout tx: <code>{payoutSig}</code>
+                {payoutStatus && (
+                  <span style={{ marginLeft: 8, color: payoutStatus === "confirmed" ? "#9fffb3" : "#ffd166" }}>
+                    {payoutStatus === "confirmed" ? "Confirmed" : "Pending..."}
+                  </span>
+                )}
               </div>
             )}
             {wagerSig && (

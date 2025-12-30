@@ -1,0 +1,58 @@
+:root {
+  font-family: "Luckiest Guy", cursive;
+  font-size: 175%;
+  line-height: 1.5;
+  font-weight: 400;
+  color: #fff3dd;
+  background-color: #1a0606;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  --bg: #1a0606;
+  --bg-soft: #2a0a0a;
+  --panel: #2b0f0f;
+  --panel-edge: #512020;
+  --accent: #ff7a18;
+  --accent-strong: #ffb347;
+  --ember: #ff5a1f;
+  --gold: #ffd166;
+  --coin-base: #ffb347;
+  --coin-highlight: #ffe8a3;
+  --coin-shadow: #d16610;
+  --coin-deep: #9a4b0f;
+  --muted: #f7cba3;
+  --purple: #4a1b6b;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background:
+    radial-gradient(1000px 700px at 20% 10%, rgba(255, 126, 24, 0.35), transparent 55%),
+    radial-gradient(800px 600px at 85% 20%, rgba(255, 200, 120, 0.25), transparent 60%),
+    radial-gradient(900px 800px at 50% 100%, rgba(90, 20, 20, 0.5), transparent 60%),
+    linear-gradient(160deg, #130404 0%, #1a0606 45%, #2a0a0a 100%);
+  color: #fff3dd;
+}
+
+h1,
+h2,
+h3 {
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+a {
+  color: var(--accent-strong);
+  text-decoration: none;
+}
+
+a:hover {
+  color: var(--gold);
+}
+
+button {
+  font-family: inherit;
+}

@@ -148,15 +148,24 @@ app.get("/", (req, res) => res.json({ ok: true }));
 app.get("/marketcap", rateLimitMarket, async (req, res) => {
   try {
     const mint = req.query.mint;
+    const debug = req.query.debug === "1";
     if (!mint || typeof mint !== "string") {
       return res.status(400).json({ error: "Missing mint" });
     }
     let marketCapUsd = null;
     let marketCapSol = null;
+    let debugInfo = { pump: null, dex: null, jup: null };
 
     const pumpResp = await fetch(`${PUMPFUN_API}/coins/${mint}`);
+    const pumpText = await pumpResp.text();
+    if (debug) {
+      debugInfo.pump = {
+        status: pumpResp.status,
+        body: pumpText.slice(0, 600),
+      };
+    }
     if (pumpResp.ok) {
-      const data = await pumpResp.json();
+      const data = JSON.parse(pumpText);
       marketCapUsd =
         data.market_cap_usd ??
         data.marketCapUsd ??
@@ -168,8 +177,15 @@ app.get("/marketcap", rateLimitMarket, async (req, res) => {
 
     if (marketCapUsd == null && marketCapSol != null) {
       const priceResp = await fetch(`${JUPITER_PRICE_API}/v6/price?ids=${SOL_MINT}`);
+      const priceText = await priceResp.text();
+      if (debug) {
+        debugInfo.jup = {
+          status: priceResp.status,
+          body: priceText.slice(0, 600),
+        };
+      }
       if (priceResp.ok) {
-        const priceData = await priceResp.json();
+        const priceData = JSON.parse(priceText);
         const solPrice = priceData?.data?.[SOL_MINT]?.price;
         if (typeof solPrice === "number") {
           marketCapUsd = Number(marketCapSol) * solPrice;
@@ -179,15 +195,25 @@ app.get("/marketcap", rateLimitMarket, async (req, res) => {
 
     if (marketCapUsd == null) {
       const dexResp = await fetch(`${DEXSCREENER_API}/latest/dex/tokens/${mint}`);
+      const dexText = await dexResp.text();
+      if (debug) {
+        debugInfo.dex = {
+          status: dexResp.status,
+          body: dexText.slice(0, 600),
+        };
+      }
       if (dexResp.ok) {
-        const data = await dexResp.json();
+        const data = JSON.parse(dexText);
         const pair = Array.isArray(data.pairs) ? data.pairs[0] : null;
         marketCapUsd = pair?.fdv ?? pair?.marketCap ?? null;
       }
     }
 
     if (marketCapUsd == null) {
-      return res.status(502).json({ error: "Market data unavailable" });
+      return res.status(502).json({
+        error: "Market data unavailable",
+        ...(debug ? { debug: debugInfo } : {}),
+      });
     }
 
     return res.json({ marketCapUsd });

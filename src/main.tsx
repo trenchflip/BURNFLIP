@@ -13,11 +13,14 @@ import "@solana/wallet-adapter-react-ui/styles.css";
 const endpoint =
   (import.meta.env?.VITE_RPC_URL as string | undefined) ??
   clusterApiUrl("mainnet-beta");
+const wsEndpoint = endpoint.startsWith("http")
+  ? endpoint.replace("https://", "wss://").replace("http://", "ws://")
+  : undefined;
 const wallets = [new PhantomWalletAdapter()];
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    <ConnectionProvider endpoint={endpoint}>
+    <ConnectionProvider endpoint={endpoint} config={{ wsEndpoint }}>
       <WalletProvider wallets={wallets} autoConnect>
         <WalletModalProvider>
           <App />

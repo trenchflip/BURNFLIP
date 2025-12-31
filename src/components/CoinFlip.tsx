@@ -1,6 +1,12 @@
 import React, { useMemo, useRef, useState, useEffect } from "react";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
-import { LAMPORTS_PER_SOL, PublicKey, SystemProgram, Transaction } from "@solana/web3.js";
+import {
+  ComputeBudgetProgram,
+  LAMPORTS_PER_SOL,
+  PublicKey,
+  SystemProgram,
+  Transaction,
+} from "@solana/web3.js";
 
 type FlipSide = "HEADS" | "TAILS";
 
@@ -159,6 +165,7 @@ export default function CoinFlip() {
           feePayer: publicKey,
           recentBlockhash: latest.blockhash,
         }).add(
+          ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 5000 }),
           SystemProgram.transfer({
             fromPubkey: publicKey,
             toPubkey: HOUSE,

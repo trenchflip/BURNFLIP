@@ -13,9 +13,11 @@ import "@solana/wallet-adapter-react-ui/styles.css";
 const endpoint =
   (import.meta.env?.VITE_RPC_URL as string | undefined) ??
   clusterApiUrl("mainnet-beta");
-const wsEndpoint = endpoint.startsWith("http")
-  ? endpoint.replace("https://", "wss://").replace("http://", "ws://")
-  : undefined;
+const wsEndpoint =
+  (import.meta.env?.VITE_RPC_WS_URL as string | undefined) ??
+  (endpoint.startsWith("http")
+    ? endpoint.replace("https://", "wss://").replace("http://", "ws://")
+    : "wss://api.mainnet-beta.solana.com");
 const wallets = [new PhantomWalletAdapter()];
 
 ReactDOM.createRoot(document.getElementById("root")!).render(

@@ -37,6 +37,13 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [publicKey]);
 
+  useEffect(() => {
+    const id = setInterval(() => {
+      if (publicKey) loadBalance();
+    }, 2000);
+    return () => clearInterval(id);
+  }, [publicKey]);
+
   return (
     <div className="app-shell">
       <div className="top-logo">

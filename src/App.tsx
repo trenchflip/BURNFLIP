@@ -64,18 +64,10 @@ export default function App() {
         </div>
         <div className="app-card">
           <div className="card-balance">
-            <div className="wallet-balance">
-              <span>Balance</span>
-              <b>{balance} SOL</b>
-              <button
-                type="button"
-                onClick={loadBalance}
-                disabled={!publicKey || loadingBalance}
-                className="wallet-refresh"
-              >
-                {loadingBalance ? "..." : "Refresh"}
-              </button>
-            </div>
+        <div className="wallet-balance">
+          <span>Balance</span>
+          <b>{balance} SOL</b>
+        </div>
           </div>
           <CoinFlip />
         </div>

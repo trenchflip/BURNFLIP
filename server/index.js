@@ -289,8 +289,7 @@ app.get("/burns", rateLimit, (req, res) => {
 app.get("/house-balance", rateLimit, async (req, res) => {
   try {
     const houseLamports = await connection.getBalance(HOUSE.publicKey, "confirmed");
-    const feeBuffer = 5000;
-    const maxBetLamports = Math.max(0, Math.floor((houseLamports - feeBuffer) / 2));
+    const maxBetLamports = Math.max(0, Math.floor(houseLamports * 0.1));
     return res.json({
       houseLamports,
       maxBetLamports,
@@ -406,6 +405,14 @@ app.post("/settle", rateLimit, async (req, res) => {
     if (foundLamports !== expectedLamports) {
       return res.status(400).json({
         error: `Incorrect amount. Found ${foundLamports} lamports, expected ${expectedLamports}`,
+      });
+    }
+
+    const houseBalForCap = await connection.getBalance(HOUSE.publicKey, "confirmed");
+    const maxBetLamports = Math.max(0, Math.floor(houseBalForCap * 0.1));
+    if (foundLamports > maxBetLamports) {
+      return res.status(400).json({
+        error: `Bet exceeds max (10% of house balance). Max ${maxBetLamports} lamports.`,
       });
     }
 

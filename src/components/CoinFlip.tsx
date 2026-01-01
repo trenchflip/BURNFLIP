@@ -52,6 +52,8 @@ export default function CoinFlip() {
   const [bet, setBet] = useState("0.1");
   const [pick, setPick] = useState<FlipSide>("HEADS");
   const [flipping, setFlipping] = useState(false);
+  const [animating, setAnimating] = useState(false);
+  const [pendingResult, setPendingResult] = useState<FlipSide | null>(null);
   const [message, setMessage] = useState<string>("");
   const [lastResult, setLastResult] = useState<FlipSide | null>(null);
   const [resultTone, setResultTone] = useState<"" | "win" | "loss">("");
@@ -134,6 +136,8 @@ export default function CoinFlip() {
     await playTone(260, 160, 0.28);
   };
 
+  const flipDurationMs = 1100;
+
   const doFlip = async () => {
     if (flipping) return;
     if (betSol <= 0) {
@@ -155,6 +159,8 @@ export default function CoinFlip() {
     setPayoutSig(null);
     setPayoutStatus(null);
     setWagerSig(null);
+    setPendingResult(null);
+    setAnimating(false);
     playTone(980, 240, 0.7);
 
     try {
@@ -228,7 +234,12 @@ export default function CoinFlip() {
       setReveal(`Server Seed: ${data.serverSeed} • Hash: ${data.serverHash} • Digest: ${data.digest}`);
       setNonce((n) => n + 1);
       const win = result === pick;
+      setPendingResult(result);
+      setMessage("Confirmed. Flipping...");
+      setAnimating(true);
+      await new Promise((r) => setTimeout(r, flipDurationMs));
       setLastResult(result);
+      setAnimating(false);
 
       const item: FlipItem = {
         id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
@@ -252,6 +263,8 @@ export default function CoinFlip() {
         playLoss();
       }
     } catch (e: any) {
+      setAnimating(false);
+      setPendingResult(null);
       setMessage(e?.message ?? "Flip failed.");
     } finally {
       setFlipping(false);
@@ -317,7 +330,7 @@ export default function CoinFlip() {
 
         <div className="coin-wrap">
           <div
-            className={`coin ${flipping ? "flip" : ""} ${
+            className={`coin ${animating ? "flip" : ""} ${
               lastResult ? lastResult.toLowerCase() : "heads"
             }`}
           >

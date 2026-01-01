@@ -510,6 +510,15 @@
     height: 180px;
   }
 
+  .coin-wrap {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .coin {
+    margin: 0 auto;
+  }
+
   .odds-row {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 8px;

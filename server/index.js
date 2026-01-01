@@ -360,7 +360,7 @@ app.post("/settle", rateLimit, async (req, res) => {
     // 1) Fetch parsed transaction
     const tx = await connection.getParsedTransaction(signature, {
       maxSupportedTransactionVersion: 0,
-      commitment: "processed",
+      commitment: "confirmed",
     });
 
     if (!tx) {

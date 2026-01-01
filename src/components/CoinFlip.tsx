@@ -174,7 +174,7 @@ export default function CoinFlip({ onFlipStateChange }: CoinFlipProps) {
           feePayer: publicKey,
           recentBlockhash: latest.blockhash,
         }).add(
-          ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 5000 }),
+          ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 15000 }),
           SystemProgram.transfer({
             fromPubkey: publicKey,
             toPubkey: HOUSE,

@@ -25,6 +25,12 @@
   --purple: #4a1b6b;
 }
 
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
 body {
   margin: 0;
   min-width: 320px;
@@ -35,6 +41,8 @@ body {
     radial-gradient(900px 800px at 50% 100%, rgba(90, 20, 20, 0.5), transparent 60%),
     linear-gradient(160deg, #130404 0%, #1a0606 45%, #2a0a0a 100%);
   color: #fff3dd;
+  overflow-x: hidden;
+  overflow-y: scroll;
 }
 
 h1,

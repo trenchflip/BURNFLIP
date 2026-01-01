@@ -67,6 +67,7 @@ export default function CoinFlip({ onFlipStateChange }: CoinFlipProps) {
   const [payoutSig, setPayoutSig] = useState<string | null>(null);
   const [payoutStatus, setPayoutStatus] = useState<"pending" | "confirmed" | null>(null);
   const [wagerSig, setWagerSig] = useState<string | null>(null);
+  const [maxBetSol, setMaxBetSol] = useState<number | null>(null);
   const [clientSeed, setClientSeed] = useState(() =>
     Math.random().toString(36).slice(2, 10)
   );
@@ -104,10 +105,33 @@ export default function CoinFlip({ onFlipStateChange }: CoinFlipProps) {
     loadCommit();
   }, [SERVER_URL]);
 
+  useEffect(() => {
+    let active = true;
+    const loadMaxBet = async () => {
+      try {
+        const resp = await fetch(`${SERVER_URL}/house-balance`);
+        if (!resp.ok) return;
+        const data = (await resp.json()) as { maxBetSol?: number };
+        if (active && typeof data.maxBetSol === "number") {
+          setMaxBetSol(data.maxBetSol);
+        }
+      } catch {
+        // ignore
+      }
+    };
+    loadMaxBet();
+    const id = setInterval(loadMaxBet, 10000);
+    return () => {
+      active = false;
+      clearInterval(id);
+    };
+  }, [SERVER_URL]);
+
   const betSol = useMemo(() => {
     const n = Number(bet);
     return Number.isFinite(n) && n > 0 ? n : 0;
   }, [bet]);
+  const overMax = maxBetSol != null && betSol > maxBetSol;
 
   const playTone = async (startHz: number, endHz: number, duration: number) => {
     if (!soundOn) return;
@@ -145,6 +169,10 @@ export default function CoinFlip({ onFlipStateChange }: CoinFlipProps) {
     if (flipping) return;
     if (betSol <= 0) {
       setMessage("Enter a valid bet amount.");
+      return;
+    }
+    if (overMax) {
+      setMessage("Bet exceeds max (10% of house balance).");
       return;
     }
     if (!clientSeed) {
@@ -425,23 +453,28 @@ export default function CoinFlip({ onFlipStateChange }: CoinFlipProps) {
 
         <button
           onClick={doFlip}
-          disabled={flipping}
+          disabled={flipping || overMax}
           style={{
             marginTop: 12,
             width: "100%",
             padding: 14,
             borderRadius: 12,
             border: "1px solid rgba(255, 138, 56, 0.6)",
-            background: flipping
+            background: flipping || overMax
               ? "rgba(40, 16, 12, 0.8)"
               : "linear-gradient(135deg, #ff7a18, #ffd166)",
-            color: flipping ? "#f7cba3" : "#2d0b05",
+            color: flipping || overMax ? "#f7cba3" : "#2d0b05",
             fontWeight: 700,
-            cursor: flipping ? "not-allowed" : "pointer",
+            cursor: flipping || overMax ? "not-allowed" : "pointer",
           }}
         >
           {flipping ? "Flipping..." : "Flip"}
         </button>
+        {maxBetSol != null && (
+          <div style={{ fontSize: 12, marginTop: 8, color: overMax ? "#ff9b6b" : "#f7cba3" }}>
+            Max bet: {maxBetSol.toFixed(4)} SOL
+          </div>
+        )}
 
         {message && (
           <div style={{ marginTop: 12, opacity: 0.95, textAlign: "center" }}>

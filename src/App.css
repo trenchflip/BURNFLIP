@@ -385,7 +385,7 @@
   transform-origin: left top;
 }
 
-@media (max-width: 960px) {
+@media (max-width: 1200px) {
   :root {
     font-size: 120%;
   }

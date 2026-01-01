@@ -39,5 +39,8 @@ This keeper triggers the on-chain `crank` every 150s.
 - Deploy: `anchor run deploy`
 - Keeper loop: `npm --prefix server run keeper:run`
 
+Dry run (no on-chain tx):
+- `DRY_RUN=1 DRY_RUN_OUT_AMOUNT=1000000000 npm --prefix server run keeper:run`
+
 ## Notes
 - This is a stub; full implementation depends on finalized Jupiter swap v6.

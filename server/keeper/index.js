@@ -29,6 +29,8 @@ const JUPITER_QUOTE_API = process.env.JUPITER_QUOTE_API || "https://quote-api.ju
 const SLIPPAGE_BPS = Number(process.env.SLIPPAGE_BPS || 100);
 const BURNFLIP_DECIMALS = Number(process.env.BURNFLIP_DECIMALS || 9);
 const NATIVE_MINT = new PublicKey("So11111111111111111111111111111111111111112");
+const DRY_RUN = process.env.DRY_RUN === "1";
+const DRY_RUN_OUT_AMOUNT = BigInt(process.env.DRY_RUN_OUT_AMOUNT || "0");
 
 const BASE_DIR = path.dirname(fileURLToPath(import.meta.url));
 const BURNS_PATH = path.join(BASE_DIR, "..", "burns.json");
@@ -108,6 +110,25 @@ function decodeState(data) {
 }
 
 async function crankOnce() {
+  if (DRY_RUN) {
+    if (DRY_RUN_OUT_AMOUNT <= 0n) {
+      console.log("Dry run: set DRY_RUN_OUT_AMOUNT to simulate burns.");
+      return;
+    }
+    const outAmount = DRY_RUN_OUT_AMOUNT;
+    const burnRaw = (outAmount * 80n) / 100n;
+    const sig = `dryrun-${Date.now()}`;
+    appendBurnEntry({
+      signature: sig,
+      timestamp: new Date().toISOString(),
+      mint: MINT.toBase58(),
+      burnAmountRaw: burnRaw.toString(),
+      burnAmountUi: formatTokenAmount(burnRaw, BURNFLIP_DECIMALS),
+      dryRun: true,
+    });
+    console.log("Dry run burn recorded:", sig);
+    return;
+  }
   const keeper = loadKeypair(KEEPER_KEYPAIR);
   const [statePda] = PublicKey.findProgramAddressSync(
     [Buffer.from("state"), MINT.toBuffer()],

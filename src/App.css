@@ -459,7 +459,7 @@
     flex-direction: column;
     gap: 14px;
     transform: none;
-    order: 3;
+    order: 6;
   }
 
   .marketcap-chart,
@@ -485,7 +485,7 @@
   .app-card {
     height: auto;
     transform: none;
-    order: 2;
+    order: 5;
   }
 
   .card-shell {
@@ -495,7 +495,7 @@
   .card-balance {
     position: static;
     margin-bottom: 10px;
-    align-self: flex-end;
+    align-self: flex-start;
   }
 
   .coin {
@@ -505,33 +505,19 @@
 
   .stats-panel {
     transform: none;
-    order: 4;
-  }
-
-  .top-ticker,
-  .app-wallet {
-    order: 2;
+    order: 8;
   }
 
   .top-logo {
     order: 1;
   }
 
-  .card-balance {
+  .top-ticker {
+    order: 2;
+  }
+
+  .app-wallet {
     order: 3;
-    align-self: flex-start;
-  }
-
-  .app-card {
-    order: 4;
-  }
-
-  .left-stack {
-    order: 5;
-  }
-
-  .stats-panel {
-    order: 6;
   }
 }
 

@@ -473,8 +473,8 @@
   .stats-panel {
     width: 100%;
     max-width: 100%;
-    margin-left: 0;
-    margin-right: 0;
+    margin-left: auto;
+    margin-right: auto;
   }
 
   .marketcap-chart,
@@ -545,15 +545,6 @@
     order: 5;
   }
 
-  .app-card,
-  .marketcap-chart,
-  .burns-card,
-  .stats-panel {
-    width: 115%;
-    max-width: 115%;
-    margin-left: -15%;
-    margin-right: 0;
-  }
 
   .top-logo {
     order: 1;

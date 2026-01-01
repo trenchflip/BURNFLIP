@@ -554,6 +554,13 @@
     order: 5;
   }
 
+  .app-card,
+  .marketcap-chart,
+  .burns-card,
+  .stats-panel {
+    transform: translateX(-15%);
+  }
+
 
   .top-logo {
     order: 1;

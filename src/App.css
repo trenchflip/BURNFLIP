@@ -397,8 +397,8 @@
   }
 
   .app-shell {
-    width: min(380px, 92vw);
-    max-width: 92vw;
+    width: min(340px, 78vw);
+    max-width: 78vw;
     margin: 0 auto;
     padding: 2vh 0 6vh;
     gap: 14px;

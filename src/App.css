@@ -26,13 +26,6 @@
   margin-bottom: 8px;
 }
 
-.top-socials {
-  width: 100%;
-  display: flex;
-  justify-content: center;
-  margin-bottom: 6px;
-}
-
 .x-link {
   width: 42px;
   height: 42px;
@@ -536,6 +529,10 @@
     margin-bottom: 10px;
     align-self: center;
     width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
   }
 
   .wallet-balance {

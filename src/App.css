@@ -448,7 +448,11 @@
   .app-main {
     width: 100%;
     max-width: 100%;
-    display: contents;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    align-items: stretch;
+    order: 4;
   }
 
   .left-stack {
@@ -458,7 +462,7 @@
     flex-direction: column;
     gap: 14px;
     transform: none;
-    order: 5;
+    order: 2;
   }
 
   .marketcap-chart,
@@ -484,7 +488,7 @@
   .app-card {
     height: auto;
     transform: none;
-    order: 4;
+    order: 1;
     flex-direction: column;
     align-items: stretch;
     gap: 10px;
@@ -507,7 +511,7 @@
 
   .stats-panel {
     transform: none;
-    order: 6;
+    order: 5;
   }
 
   .top-logo {

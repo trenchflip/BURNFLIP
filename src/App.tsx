@@ -54,6 +54,19 @@ export default function App() {
       <div className="top-logo">
         <img src="/burnflip-logo.png" alt="Burn Flip logo" />
       </div>
+      <div className="top-socials">
+        <a
+          href="https://x.com/burnflip_"
+          className="x-link"
+          target="_blank"
+          rel="noreferrer"
+          aria-label="BurnFlip on X"
+        >
+          <svg viewBox="0 0 24 24" role="img" aria-hidden="true">
+            <path d="M18.244 2H21l-6.517 7.45L22 22h-6.406l-4.583-5.96L5.406 22H2.65l7.07-8.082L2 2h6.57l4.14 5.41L18.244 2Zm-2.24 18h1.777L8.06 4h-1.8l9.744 16Z" />
+          </svg>
+        </a>
+      </div>
       <div className="top-ticker">
         <MarketCapTicker />
       </div>

@@ -158,7 +158,6 @@ export default function CoinFlip() {
     setPayoutSig(null);
     setPayoutStatus(null);
     setWagerSig(null);
-    setPendingResult(null);
     setAnimating(false);
     playTone(980, 240, 0.7);
 
@@ -233,7 +232,6 @@ export default function CoinFlip() {
       setReveal(`Server Seed: ${data.serverSeed} • Hash: ${data.serverHash} • Digest: ${data.digest}`);
       setNonce((n) => n + 1);
       const win = result === pick;
-      setPendingResult(result);
       setMessage("Confirmed. Flipping...");
       setAnimating(true);
       await new Promise((r) => setTimeout(r, flipDurationMs));
@@ -263,7 +261,6 @@ export default function CoinFlip() {
       }
     } catch (e: any) {
       setAnimating(false);
-      setPendingResult(null);
       setMessage(e?.message ?? "Flip failed.");
     } finally {
       setFlipping(false);

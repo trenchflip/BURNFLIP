@@ -390,6 +390,7 @@
     font-size: 120%;
   }
 
+  body,
   #root {
     max-width: 100vw;
     overflow-x: hidden;
@@ -446,10 +447,7 @@
   .app-main {
     width: 100%;
     max-width: 100%;
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-    align-items: stretch;
+    display: contents;
   }
 
   .left-stack {
@@ -459,7 +457,7 @@
     flex-direction: column;
     gap: 14px;
     transform: none;
-    order: 6;
+    order: 5;
   }
 
   .marketcap-chart,
@@ -485,7 +483,7 @@
   .app-card {
     height: auto;
     transform: none;
-    order: 5;
+    order: 4;
   }
 
   .card-shell {
@@ -505,7 +503,7 @@
 
   .stats-panel {
     transform: none;
-    order: 8;
+    order: 6;
   }
 
   .top-logo {
@@ -519,18 +517,9 @@
   .app-wallet {
     order: 3;
   }
-}
 
-@media (max-width: 960px) {
-  .app-card,
-  .card-shell,
-  .stats-panel,
-  .burns-card,
-  .marketcap-chart,
-  .top-ticker,
-  .app-wallet {
-    width: 100% !important;
-    max-width: 100% !important;
+  .left-stack > * {
+    width: 100%;
   }
 }
 

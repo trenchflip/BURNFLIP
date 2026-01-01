@@ -48,7 +48,11 @@ function formatTime(ts: number) {
   return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
 }
 
-export default function CoinFlip() {
+type CoinFlipProps = {
+  onFlipStateChange?: (isFlipping: boolean) => void;
+};
+
+export default function CoinFlip({ onFlipStateChange }: CoinFlipProps) {
   const [bet, setBet] = useState("0.1");
   const [pick, setPick] = useState<FlipSide>("HEADS");
   const [flipping, setFlipping] = useState(false);
@@ -153,6 +157,7 @@ export default function CoinFlip() {
     }
 
     setFlipping(true);
+    onFlipStateChange?.(true);
     setResultTone("");
     setMessage("Waiting for wallet approval");
     setPayoutSig(null);
@@ -264,6 +269,7 @@ export default function CoinFlip() {
       setMessage(e?.message ?? "Flip failed.");
     } finally {
       setFlipping(false);
+      onFlipStateChange?.(false);
     }
   };
 

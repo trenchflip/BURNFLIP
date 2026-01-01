@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 import { LAMPORTS_PER_SOL } from "@solana/web3.js";
@@ -14,6 +14,8 @@ export default function App() {
   const { connection } = useConnection();
   const { publicKey } = useWallet();
   const [balance, setBalance] = useState<string>("—");
+  const [isFlipping, setIsFlipping] = useState(false);
+  const prevFlipping = useRef(false);
 
   const loadBalance = async () => {
     if (!publicKey) {
@@ -35,10 +37,17 @@ export default function App() {
 
   useEffect(() => {
     const id = setInterval(() => {
-      if (publicKey) loadBalance();
+      if (publicKey && !isFlipping) loadBalance();
     }, 2000);
     return () => clearInterval(id);
-  }, [publicKey]);
+  }, [publicKey, isFlipping]);
+
+  useEffect(() => {
+    if (prevFlipping.current && !isFlipping && publicKey) {
+      loadBalance();
+    }
+    prevFlipping.current = isFlipping;
+  }, [isFlipping, publicKey]);
 
   return (
     <div className="app-shell">
@@ -65,7 +74,7 @@ export default function App() {
           <b>{balance} SOL</b>
         </div>
           </div>
-          <CoinFlip />
+          <CoinFlip onFlipStateChange={setIsFlipping} />
         </div>
       </div>
       <StatsPanel />

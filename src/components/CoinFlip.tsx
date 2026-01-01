@@ -53,7 +53,6 @@ export default function CoinFlip() {
   const [pick, setPick] = useState<FlipSide>("HEADS");
   const [flipping, setFlipping] = useState(false);
   const [animating, setAnimating] = useState(false);
-  const [pendingResult, setPendingResult] = useState<FlipSide | null>(null);
   const [message, setMessage] = useState<string>("");
   const [lastResult, setLastResult] = useState<FlipSide | null>(null);
   const [resultTone, setResultTone] = useState<"" | "win" | "loss">("");

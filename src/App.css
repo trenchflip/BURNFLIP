@@ -502,7 +502,13 @@
   .card-balance {
     position: static;
     margin-bottom: 10px;
-    align-self: stretch;
+    align-self: center;
+    width: 100%;
+  }
+
+  .wallet-balance {
+    justify-content: center;
+    text-align: center;
   }
 
   .coin {

@@ -520,6 +520,9 @@
     padding: 8px 10px;
     font-size: 0.85rem;
     min-width: 0;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
   }
 
   .fair-row {

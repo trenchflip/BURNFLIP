@@ -14,7 +14,6 @@ export default function App() {
   const { connection } = useConnection();
   const { publicKey } = useWallet();
   const [balance, setBalance] = useState<string>("—");
-  const [loadingBalance, setLoadingBalance] = useState(false);
 
   const loadBalance = async () => {
     if (!publicKey) {
@@ -22,13 +21,10 @@ export default function App() {
       return;
     }
     try {
-      setLoadingBalance(true);
       const lamports = await connection.getBalance(publicKey, "confirmed");
       setBalance((lamports / LAMPORTS_PER_SOL).toFixed(4));
     } catch (e) {
       setBalance("—");
-    } finally {
-      setLoadingBalance(false);
     }
   };
 

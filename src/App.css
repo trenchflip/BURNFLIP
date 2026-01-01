@@ -194,11 +194,25 @@
   color: #fff3dd;
   text-transform: uppercase;
   letter-spacing: 0.4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .burns-time {
   font-size: 0.75rem;
   color: rgba(255, 217, 179, 0.75);
+}
+
+.burns-badge {
+  font-size: 0.65rem;
+  padding: 2px 6px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 138, 56, 0.45);
+  background: rgba(39, 12, 10, 0.7);
+  color: #ffd9b3;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
 }
 
 .burns-link {

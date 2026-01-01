@@ -5,9 +5,10 @@ type BurnEntry = {
   timestamp: string;
   burnAmountUi?: string;
   burnAmountRaw?: string;
+  dryRun?: boolean;
 };
 
-const POLL_MS = 3000;
+const POLL_MS = 8000;
 const TICK_MS = 1000;
 
 function shortSig(sig: string) {
@@ -87,6 +88,7 @@ export default function BurnFeed() {
               <div className="burns-left">
                 <span className="burns-amount">
                   🔥 {burn.burnAmountUi ?? "—"} BURN
+                  {burn.dryRun && <span className="burns-badge">Dry run</span>}
                 </span>
                 <span className="burns-time">
                   {new Date(burn.timestamp).toLocaleTimeString()}

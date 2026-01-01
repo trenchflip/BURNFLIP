@@ -42,5 +42,8 @@ This keeper triggers the on-chain `crank` every 150s.
 Dry run (no on-chain tx):
 - `DRY_RUN=1 DRY_RUN_OUT_AMOUNT=1000000000 npm --prefix server run keeper:run`
 
+Database (shared burns):
+- Set `DATABASE_URL` for both the API and keeper to persist burns in Postgres.
+
 ## Notes
 - This is a stub; full implementation depends on finalized Jupiter swap v6.

@@ -3,6 +3,7 @@ import fs from "fs";
 import crypto from "crypto";
 import path from "path";
 import { fileURLToPath } from "url";
+import pg from "pg";
 import {
   Connection,
   Keypair,
@@ -31,9 +32,20 @@ const BURNFLIP_DECIMALS = Number(process.env.BURNFLIP_DECIMALS || 9);
 const NATIVE_MINT = new PublicKey("So11111111111111111111111111111111111111112");
 const DRY_RUN = process.env.DRY_RUN === "1";
 const DRY_RUN_OUT_AMOUNT = BigInt(process.env.DRY_RUN_OUT_AMOUNT || "0");
+const DRY_RUN_MIN_PROFIT_LAMPORTS = BigInt(process.env.DRY_RUN_MIN_PROFIT_LAMPORTS || "5000000");
+const DRY_RUN_MAX_PROFIT_LAMPORTS = BigInt(process.env.DRY_RUN_MAX_PROFIT_LAMPORTS || "50000000");
+const DRY_RUN_MIN_OUT_AMOUNT = BigInt(process.env.DRY_RUN_MIN_OUT_AMOUNT || "100000000");
+const DRY_RUN_MAX_OUT_AMOUNT = BigInt(process.env.DRY_RUN_MAX_OUT_AMOUNT || "5000000000");
 
 const BASE_DIR = path.dirname(fileURLToPath(import.meta.url));
 const BURNS_PATH = path.join(BASE_DIR, "..", "burns.json");
+const DATABASE_URL = process.env.DATABASE_URL;
+const pool = DATABASE_URL
+  ? new pg.Pool({
+      connectionString: DATABASE_URL,
+      ssl: { rejectUnauthorized: false },
+    })
+  : null;
 
 const connection = new Connection(RPC_URL, "confirmed");
 
@@ -54,7 +66,43 @@ function encodeCrank(jupiterIxData) {
   return Buffer.concat([discriminator("crank"), len, data]);
 }
 
-function appendBurnEntry(entry) {
+async function appendBurnEntry(entry) {
+  if (pool) {
+    await pool.query(
+      `create table if not exists burns (
+        signature text primary key,
+        timestamp timestamptz not null,
+        mint text,
+        burn_amount_raw text,
+        burn_amount_ui text,
+        profit_lamports text,
+        profit_sol text,
+        out_amount_raw text,
+        out_amount_ui text,
+        dry_run boolean default false
+      )`
+    );
+    await pool.query(
+      `insert into burns (
+        signature, timestamp, mint, burn_amount_raw, burn_amount_ui,
+        profit_lamports, profit_sol, out_amount_raw, out_amount_ui, dry_run
+      ) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+      on conflict (signature) do nothing`,
+      [
+        entry.signature,
+        entry.timestamp,
+        entry.mint,
+        entry.burnAmountRaw ?? null,
+        entry.burnAmountUi ?? null,
+        entry.profitLamports ?? null,
+        entry.profitSol ?? null,
+        entry.outAmountRaw ?? null,
+        entry.outAmountUi ?? null,
+        entry.dryRun ?? false,
+      ]
+    );
+    return;
+  }
   try {
     const raw = fs.readFileSync(BURNS_PATH, "utf8");
     const data = JSON.parse(raw);
@@ -109,24 +157,45 @@ function decodeState(data) {
   };
 }
 
+function randomBigInt(min, max) {
+  if (max <= min) return min;
+  const range = max - min;
+  const rand = BigInt(Math.floor(Math.random() * Number(range)));
+  return min + rand;
+}
+
+function formatSol(lamports) {
+  return (Number(lamports) / 1e9).toFixed(4);
+}
+
 async function crankOnce() {
   if (DRY_RUN) {
-    if (DRY_RUN_OUT_AMOUNT <= 0n) {
-      console.log("Dry run: set DRY_RUN_OUT_AMOUNT to simulate burns.");
-      return;
-    }
-    const outAmount = DRY_RUN_OUT_AMOUNT;
+    const profitLamports = randomBigInt(
+      DRY_RUN_MIN_PROFIT_LAMPORTS,
+      DRY_RUN_MAX_PROFIT_LAMPORTS
+    );
+    const outAmount =
+      DRY_RUN_OUT_AMOUNT > 0n
+        ? DRY_RUN_OUT_AMOUNT
+        : randomBigInt(DRY_RUN_MIN_OUT_AMOUNT, DRY_RUN_MAX_OUT_AMOUNT);
     const burnRaw = (outAmount * 80n) / 100n;
     const sig = `dryrun-${Date.now()}`;
-    appendBurnEntry({
+    await appendBurnEntry({
       signature: sig,
       timestamp: new Date().toISOString(),
       mint: MINT.toBase58(),
+      profitLamports: profitLamports.toString(),
+      profitSol: formatSol(profitLamports),
+      outAmountRaw: outAmount.toString(),
+      outAmountUi: formatTokenAmount(outAmount, BURNFLIP_DECIMALS),
       burnAmountRaw: burnRaw.toString(),
       burnAmountUi: formatTokenAmount(burnRaw, BURNFLIP_DECIMALS),
       dryRun: true,
     });
-    console.log("Dry run burn recorded:", sig);
+    console.log(
+      `Dry run burn recorded: ${sig} (profit ${formatSol(profitLamports)} SOL, ` +
+        `out ${formatTokenAmount(outAmount, BURNFLIP_DECIMALS)} tokens)`
+    );
     return;
   }
   const keeper = loadKeypair(KEEPER_KEYPAIR);
@@ -244,7 +313,7 @@ async function crankOnce() {
 
   const outAmount = BigInt(quote.outAmount || 0);
   const burnRaw = (outAmount * 80n) / 100n;
-  appendBurnEntry({
+  await appendBurnEntry({
     signature: sig,
     timestamp: new Date().toISOString(),
     mint: MINT.toBase58(),

@@ -5,6 +5,7 @@ import path from "path";
 import crypto from "crypto";
 import "dotenv/config";
 import { fileURLToPath } from "url";
+import pg from "pg";
 import {
   Connection,
   Keypair,
@@ -37,6 +38,13 @@ const SOL_MINT = "So11111111111111111111111111111111111111112";
 const WIN_CHANCE = 0.5;
 const HOUSE_EDGE = 0.025;
 const PAYOUT_MULTIPLIER = (1 - HOUSE_EDGE) / WIN_CHANCE;
+const DATABASE_URL = process.env.DATABASE_URL;
+const pool = DATABASE_URL
+  ? new pg.Pool({
+      connectionString: DATABASE_URL,
+      ssl: { rejectUnauthorized: false },
+    })
+  : null;
 
 // Load HOUSE keypair from file
 const HOUSE_PATH = process.env.HOUSE_PATH
@@ -117,6 +125,44 @@ function readBurns() {
   } catch (e) {
     return [];
   }
+}
+
+async function readBurnsDb(limit) {
+  if (!pool) return readBurns();
+  await pool.query(
+    `create table if not exists burns (
+      signature text primary key,
+      timestamp timestamptz not null,
+      mint text,
+      burn_amount_raw text,
+      burn_amount_ui text,
+      profit_lamports text,
+      profit_sol text,
+      out_amount_raw text,
+      out_amount_ui text,
+      dry_run boolean default false
+    )`
+  );
+  const { rows } = await pool.query(
+    `select signature, timestamp, mint, burn_amount_raw, burn_amount_ui,
+            profit_lamports, profit_sol, out_amount_raw, out_amount_ui, dry_run
+       from burns
+      order by timestamp desc
+      limit $1`,
+    [limit]
+  );
+  return rows.map((row) => ({
+    signature: row.signature,
+    timestamp: row.timestamp,
+    mint: row.mint,
+    burnAmountRaw: row.burn_amount_raw,
+    burnAmountUi: row.burn_amount_ui,
+    profitLamports: row.profit_lamports,
+    profitSol: row.profit_sol,
+    outAmountRaw: row.out_amount_raw,
+    outAmountUi: row.out_amount_ui,
+    dryRun: row.dry_run,
+  }));
 }
 
 function createRateLimiter(maxPerWindow, windowMs) {
@@ -262,27 +308,30 @@ app.get("/stats", rateLimit, async (req, res) => {
   }
 });
 
-app.get("/burns", rateLimit, (req, res) => {
-  const limit = Math.min(Number(req.query.limit ?? 10), 50);
-  const burns = readBurns();
-  const latest = burns.slice(-limit).reverse();
-  const last = burns[burns.length - 1];
-  let nextBurnAt = null;
-  let secondsRemaining = null;
-  if (last?.timestamp) {
-    const lastTs = Date.parse(last.timestamp);
-    if (!Number.isNaN(lastTs)) {
-      nextBurnAt = new Date(lastTs + BURN_INTERVAL_SEC * 1000).toISOString();
-      const diff = Math.ceil((lastTs + BURN_INTERVAL_SEC * 1000 - Date.now()) / 1000);
-      secondsRemaining = Math.max(0, diff);
+app.get("/burns", rateLimit, async (req, res) => {
+  try {
+    const limit = Math.min(50, Math.max(1, Number(req.query.limit) || 10));
+    const latest = await readBurnsDb(limit);
+    const last = latest[0];
+    let nextBurnAt = null;
+    let secondsRemaining = null;
+    if (last?.timestamp) {
+      const lastTs = Date.parse(last.timestamp);
+      if (!Number.isNaN(lastTs)) {
+        nextBurnAt = new Date(lastTs + BURN_INTERVAL_SEC * 1000).toISOString();
+        const diff = Math.ceil((lastTs + BURN_INTERVAL_SEC * 1000 - Date.now()) / 1000);
+        secondsRemaining = Math.max(0, diff);
+      }
     }
+    return res.json({
+      burns: latest,
+      nextBurnAt,
+      secondsRemaining,
+      intervalSeconds: BURN_INTERVAL_SEC,
+    });
+  } catch (e) {
+    return res.status(500).json({ error: e?.message ?? "Server error" });
   }
-  return res.json({
-    burns: latest,
-    nextBurnAt,
-    secondsRemaining,
-    intervalSeconds: BURN_INTERVAL_SEC,
-  });
 });
 
 // HOUSE balance + max bet

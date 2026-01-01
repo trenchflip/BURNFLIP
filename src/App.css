@@ -510,7 +510,28 @@
 
   .top-ticker,
   .app-wallet {
+    order: 2;
+  }
+
+  .top-logo {
     order: 1;
+  }
+
+  .card-balance {
+    order: 3;
+    align-self: flex-start;
+  }
+
+  .app-card {
+    order: 4;
+  }
+
+  .left-stack {
+    order: 5;
+  }
+
+  .stats-panel {
+    order: 6;
   }
 }
 

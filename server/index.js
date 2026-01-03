@@ -34,6 +34,10 @@ const BURN_INTERVAL_SEC = Number(process.env.BURN_INTERVAL_SEC || 150);
 const PUMPFUN_API = process.env.PUMPFUN_API || "https://frontend-api.pump.fun";
 const DEXSCREENER_API = process.env.DEXSCREENER_API || "https://api.dexscreener.com";
 const JUPITER_PRICE_API = process.env.JUPITER_PRICE_API || "https://price.jup.ag";
+const JUPITER_PRICE_FALLBACK = "https://api.jup.ag/price/v2";
+const MARKETCAP_OVERRIDE_USD = process.env.MARKETCAP_OVERRIDE_USD
+  ? Number(process.env.MARKETCAP_OVERRIDE_USD)
+  : null;
 const SOL_MINT = "So11111111111111111111111111111111111111112";
 const WIN_CHANCE = 0.5;
 const HOUSE_EDGE = 0.025;
@@ -139,6 +143,32 @@ async function safeFetchText(url) {
   }
 }
 
+async function fetchJupPrice(ids) {
+  const urls = [
+    `${JUPITER_PRICE_API}/v6/price?ids=${ids}`,
+    `${JUPITER_PRICE_FALLBACK}?ids=${ids}`,
+  ];
+  const debug = [];
+  for (const url of urls) {
+    const resp = await safeFetchText(url);
+    debug.push({ url, status: resp.status, error: resp.error ?? null, body: resp.text.slice(0, 300) });
+    if (resp.ok) {
+      try {
+        const data = JSON.parse(resp.text);
+        const price =
+          data?.data?.[ids]?.price ??
+          data?.data?.[ids]?.value ??
+          data?.data?.[ids]?.priceUsd ??
+          null;
+        if (typeof price === "number") return { price, debug };
+      } catch {
+        // ignore parse error and try next
+      }
+    }
+  }
+  return { price: null, debug };
+}
+
 async function readBurnsDb(limit) {
   if (!pool) return readBurns();
   await pool.query(
@@ -235,21 +265,10 @@ app.get("/marketcap", rateLimitMarket, async (req, res) => {
     }
 
     if (marketCapUsd == null && marketCapSol != null) {
-      const priceResp = await safeFetchText(`${JUPITER_PRICE_API}/v6/price?ids=${SOL_MINT}`);
-      const priceText = priceResp.text;
-      if (debug) {
-        debugInfo.jup = {
-          status: priceResp.status,
-          body: priceText.slice(0, 600),
-          error: priceResp.error ?? null,
-        };
-      }
-      if (priceResp.ok) {
-        const priceData = JSON.parse(priceText);
-        const solPrice = priceData?.data?.[SOL_MINT]?.price;
-        if (typeof solPrice === "number") {
-          marketCapUsd = Number(marketCapSol) * solPrice;
-        }
+      const priceResp = await fetchJupPrice(SOL_MINT);
+      if (debug) debugInfo.jup = priceResp.debug;
+      if (typeof priceResp.price === "number") {
+        marketCapUsd = Number(marketCapSol) * priceResp.price;
       }
     }
 
@@ -271,26 +290,19 @@ app.get("/marketcap", rateLimitMarket, async (req, res) => {
     }
 
     if (marketCapUsd == null) {
-      const priceResp = await safeFetchText(`${JUPITER_PRICE_API}/v6/price?ids=${mint}`);
-      const priceText = priceResp.text;
-      if (debug) {
-        debugInfo.jup = {
-          status: priceResp.status,
-          body: priceText.slice(0, 600),
-          error: priceResp.error ?? null,
-        };
-      }
-      if (priceResp.ok) {
-        const priceData = JSON.parse(priceText);
-        const tokenPrice = priceData?.data?.[mint]?.price;
-        if (typeof tokenPrice === "number") {
-          const supply = await connection.getTokenSupply(new PublicKey(mint), "confirmed");
-          const uiSupply = Number(supply.value.uiAmountString ?? supply.value.uiAmount ?? 0);
-          if (uiSupply > 0) {
-            marketCapUsd = uiSupply * tokenPrice;
-          }
+      const priceResp = await fetchJupPrice(mint);
+      if (debug) debugInfo.jup = priceResp.debug;
+      if (typeof priceResp.price === "number") {
+        const supply = await connection.getTokenSupply(new PublicKey(mint), "confirmed");
+        const uiSupply = Number(supply.value.uiAmountString ?? supply.value.uiAmount ?? 0);
+        if (uiSupply > 0) {
+          marketCapUsd = uiSupply * priceResp.price;
         }
       }
+    }
+
+    if (marketCapUsd == null && typeof MARKETCAP_OVERRIDE_USD === "number") {
+      marketCapUsd = MARKETCAP_OVERRIDE_USD;
     }
 
     if (marketCapUsd == null) {

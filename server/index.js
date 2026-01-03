@@ -38,6 +38,8 @@ const SOL_MINT = "So11111111111111111111111111111111111111112";
 const WIN_CHANCE = 0.5;
 const HOUSE_EDGE = 0.025;
 const PAYOUT_MULTIPLIER = (1 - HOUSE_EDGE) / WIN_CHANCE;
+let lastMarketCapUsd = null;
+let lastMarketCapTs = 0;
 const DATABASE_URL = process.env.DATABASE_URL;
 const pool = DATABASE_URL
   ? new pg.Pool({
@@ -127,6 +129,16 @@ function readBurns() {
   }
 }
 
+async function safeFetchText(url) {
+  try {
+    const resp = await fetch(url);
+    const text = await resp.text();
+    return { ok: resp.ok, status: resp.status, text };
+  } catch (e) {
+    return { ok: false, status: 0, text: "", error: e?.message ?? "fetch failed" };
+  }
+}
+
 async function readBurnsDb(limit) {
   if (!pool) return readBurns();
   await pool.query(
@@ -202,12 +214,13 @@ app.get("/marketcap", rateLimitMarket, async (req, res) => {
     let marketCapSol = null;
     let debugInfo = { pump: null, dex: null, jup: null };
 
-    const pumpResp = await fetch(`${PUMPFUN_API}/coins/${mint}`);
-    const pumpText = await pumpResp.text();
+    const pumpResp = await safeFetchText(`${PUMPFUN_API}/coins/${mint}`);
+    const pumpText = pumpResp.text;
     if (debug) {
       debugInfo.pump = {
         status: pumpResp.status,
         body: pumpText.slice(0, 600),
+        error: pumpResp.error ?? null,
       };
     }
     if (pumpResp.ok) {
@@ -222,12 +235,13 @@ app.get("/marketcap", rateLimitMarket, async (req, res) => {
     }
 
     if (marketCapUsd == null && marketCapSol != null) {
-      const priceResp = await fetch(`${JUPITER_PRICE_API}/v6/price?ids=${SOL_MINT}`);
-      const priceText = await priceResp.text();
+      const priceResp = await safeFetchText(`${JUPITER_PRICE_API}/v6/price?ids=${SOL_MINT}`);
+      const priceText = priceResp.text;
       if (debug) {
         debugInfo.jup = {
           status: priceResp.status,
           body: priceText.slice(0, 600),
+          error: priceResp.error ?? null,
         };
       }
       if (priceResp.ok) {
@@ -240,12 +254,13 @@ app.get("/marketcap", rateLimitMarket, async (req, res) => {
     }
 
     if (marketCapUsd == null) {
-      const dexResp = await fetch(`${DEXSCREENER_API}/latest/dex/tokens/${mint}`);
-      const dexText = await dexResp.text();
+      const dexResp = await safeFetchText(`${DEXSCREENER_API}/latest/dex/tokens/${mint}`);
+      const dexText = dexResp.text;
       if (debug) {
         debugInfo.dex = {
           status: dexResp.status,
           body: dexText.slice(0, 600),
+          error: dexResp.error ?? null,
         };
       }
       if (dexResp.ok) {
@@ -256,12 +271,13 @@ app.get("/marketcap", rateLimitMarket, async (req, res) => {
     }
 
     if (marketCapUsd == null) {
-      const priceResp = await fetch(`${JUPITER_PRICE_API}/v6/price?ids=${mint}`);
-      const priceText = await priceResp.text();
+      const priceResp = await safeFetchText(`${JUPITER_PRICE_API}/v6/price?ids=${mint}`);
+      const priceText = priceResp.text;
       if (debug) {
         debugInfo.jup = {
           status: priceResp.status,
           body: priceText.slice(0, 600),
+          error: priceResp.error ?? null,
         };
       }
       if (priceResp.ok) {
@@ -278,12 +294,18 @@ app.get("/marketcap", rateLimitMarket, async (req, res) => {
     }
 
     if (marketCapUsd == null) {
+      if (lastMarketCapUsd != null) {
+        const ageSec = Math.floor((Date.now() - lastMarketCapTs) / 1000);
+        return res.json({ marketCapUsd: lastMarketCapUsd, stale: true, ageSec });
+      }
       return res.status(502).json({
         error: "Market data unavailable",
         ...(debug ? { debug: debugInfo } : {}),
       });
     }
 
+    lastMarketCapUsd = marketCapUsd;
+    lastMarketCapTs = Date.now();
     return res.json({ marketCapUsd });
   } catch (e) {
     return res.status(500).json({ error: e?.message ?? "Server error" });
